@@ -18,18 +18,23 @@ class ClearSession(Resource):
 class Signup(Resource):
     
     def post(self):
-        json = request.get_json()
-        if json['username'] and json['password']:
-            user = User(
-                username=json['username'],
-                password_hash=json['password']
-            )
-            db.session.add(user)
+        
+        username = request.get_json()['username']
+        password = request.get_json()['password']
+
+        if username and password:
+            
+            new_user = User(username=username)
+            new_user.password_hash = password
+            db.session.add(new_user)
             db.session.commit()
 
-            session['user_id'] = user.id
-            return user.to_dict(), 201
-        return {'error': 'Unprocessable entity'}, 422
+            session['user_id'] = new_user.id
+            
+            return new_user.to_dict(), 201
+
+        return {'error': '422 Unprocessable Entity'}, 422
+
 
 class CheckSession(Resource):
     def get(self):
@@ -40,12 +45,18 @@ class CheckSession(Resource):
 
 class Login(Resource):
     def post(self):
-        json = request.get_json()
-        user = User.query.filter(User.username == json['username']).first()
-        if user.authenticate(json['password']):
+
+        username = request.get_json()['username']
+        password = request.get_json()['password']
+
+        user = User.query.filter(User.username == username).first()
+
+        if user.authenticate(password):
+
             session['user_id'] = user.id
-            return user.to_dict(), 201
-        return {'error': 'Unauthorized'}, 401
+            return user.to_dict(), 200
+
+        return {'error': '401 Unauthorized'}, 401
 
 class Logout(Resource):
     def delete(self):
@@ -54,6 +65,9 @@ class Logout(Resource):
 
 api.add_resource(ClearSession, '/clear', endpoint='clear')
 api.add_resource(Signup, '/signup', endpoint='signup')
+api.add_resource(CheckSession, '/check_session', endpoint='check_session')
+api.add_resource(Login, '/login', endpoint='login')
+api.add_resource(Logout, '/logout', endpoint='logout')
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
